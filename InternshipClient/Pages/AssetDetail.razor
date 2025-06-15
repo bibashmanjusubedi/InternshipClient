@@ -1,0 +1,80 @@
+﻿@page "/assetDetail/{AssetId:int}"
+@inject HttpClient Http
+
+<h3>Asset Details</h3>
+
+@if (assetDetail == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="asset-detail-card">
+        <div class="detail-row">
+            <span class="detail-label">ID:</span>
+            <span class="detail-value">@assetDetail.AssetId</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Name:</span>
+            <span class="detail-value">@assetDetail.Name</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Short Name:</span>
+            <span class="detail-value">@assetDetail.ShortName</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value">@assetDetail.Status</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Purchase Date:</span>
+            <span class="detail-value">@assetDetail.PurchaseDate?.ToShortDateString()</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Assigned To:</span>
+            <span class="detail-value">@assetDetail.AssignedTo</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Return Date:</span>
+            <span class="detail-value">@assetDetail.ReturnDate?.ToShortDateString()</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Category:</span>
+            <span class="detail-value">@assetDetail.CategoryName</span>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" @onclick="NavigateToEdit">Edit Asset</button>
+}
+
+@code {
+    [Parameter]
+    public int AssetId { get; set; }
+
+    private AssetDetailModel assetDetail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        assetDetail = await Http.GetFromJsonAsync<AssetDetailModel>($"api/Asset/{AssetId}");
+    }
+
+    private void NavigateToEdit()
+    {
+        NavigationManager.NavigateTo($"/assetEdit/{AssetId}");
+    }
+
+    public class AssetDetailModel
+    {
+        public int AssetId { get; set; }
+        public string Name { get; set; }
+        public string ShortName { get; set; }
+        public string Status { get; set; }
+        public DateTime? PurchaseDate { get; set; }
+        public string AssignedTo { get; set; }
+        public DateTime? ReturnDate { get; set; }
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; }
+        public string Description { get; set; }
+        public string Unit { get; set; }
+    }
+}

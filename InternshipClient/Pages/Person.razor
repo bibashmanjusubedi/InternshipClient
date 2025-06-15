@@ -1,0 +1,181 @@
+﻿@page "/persons"
+@inject IPersonService PersonService
+
+<h3>Manage Persons</h3>
+
+@if (persons == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div style="margin: 20px 0;">
+        <input placeholder="Search..." @bind="searchTerm" @bind:event="oninput" />
+        <button @onclick="ShowAddForm">Add Person</button>
+    </div>
+
+    @if (showAddForm)
+    {
+        <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 20px;">
+            <h4>@(editingPerson.PId == 0 ? "Add Person" : "Edit Person")</h4>
+            <EditForm Model="@editingPerson" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator />
+
+                <div style="margin-bottom: 10px;">
+                    <label>Name:</label>
+                    <InputText @bind-Value="editingPerson.Name" style="width: 100%;" />
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label>Phone:</label>
+                    <InputText @bind-Value="editingPerson.Phone" style="width: 100%;" />
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label>Login ID:</label>
+                    <InputText @bind-Value="editingPerson.LoginId" style="width: 100%;" />
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label>Status:</label>
+                    <InputSelect @bind-Value="editingPerson.LoginStatus">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </InputSelect>
+                </div>
+
+                <div>
+                    <button type="submit">Save</button>
+                    <button type="button" @onclick="CancelEdit">Cancel</button>
+                </div>
+            </EditForm>
+        </div>
+    }
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="border-bottom: 1px solid #ccc;">
+                <th style="text-align: left; padding: 8px;">Name</th>
+                <th style="text-align: left; padding: 8px;">Phone</th>
+                <th style="text-align: left; padding: 8px;">Login ID</th>
+                <th style="text-align: left; padding: 8px;">Status</th>
+                <th style="text-align: left; padding: 8px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var person in filteredPersons)
+            {
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 8px;">@person.Name</td>
+                    <td style="padding: 8px;">@person.Phone</td>
+                    <td style="padding: 8px;">@person.LoginId</td>
+                    <td style="padding: 8px;">
+                        @if (person.LoginStatus == "Active")
+                        {
+                            <span style="color: green;">✓</span>
+                        }
+                        else
+                        {
+                            <span style="color: red;">✗</span>
+                        }
+                    </td>
+                    <td style="padding: 8px;">
+                        <button @onclick="() => EditPerson(person.PId)">Edit</button>
+                        <button @onclick="() => DeletePerson(person.PId)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Person> persons = new();
+    private List<Person> filteredPersons = new();
+    private Person editingPerson = new();
+    private bool showAddForm = false;
+    private string searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPersons();
+    }
+
+    private async Task LoadPersons()
+    {
+        persons = await PersonService.GetAllPersonsAsync();
+        FilterPersons();
+    }
+
+    private void FilterPersons()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredPersons = persons.ToList();
+        }
+        else
+        {
+            filteredPersons = persons.Where(p =>
+                p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.Phone.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.LoginId.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        editingPerson = new Person { LoginStatus = "Active" };
+        showAddForm = true;
+    }
+
+    private async Task EditPerson(int id)
+    {
+        editingPerson = await PersonService.GetPersonByIdAsync(id);
+        showAddForm = true;
+    }
+
+    private void CancelEdit()
+    {
+        showAddForm = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (editingPerson.PId == 0)
+        {
+            await PersonService.AddPersonAsync(editingPerson);
+        }
+        else
+        {
+            await PersonService.UpdatePersonAsync(editingPerson);
+        }
+
+        showAddForm = false;
+        await LoadPersons();
+    }
+
+    private async Task DeletePerson(int id)
+    {
+        await PersonService.DeletePersonAsync(id);
+        await LoadPersons();
+    }
+
+    public class PersonModel
+    {
+        public int PId { get; set; }
+        public string Name { get; set; }
+        public string Phone { get; set; }
+        public string LoginId { get; set; }
+        public string LoginStatus { get; set; }
+    }
+
+    public interface IPersonService
+    {
+        Task<List<Person>> GetAllPersonsAsync();
+        Task<Person> GetPersonByIdAsync(int id);
+        Task AddPersonAsync(Person person);
+        Task UpdatePersonAsync(Person person);
+        Task DeletePersonAsync(int id);
+    }
+}

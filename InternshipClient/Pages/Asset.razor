@@ -1,0 +1,142 @@
+﻿@page "/asset"
+@inject HttpClient Http
+
+<h3>Assets</h3>
+
+@if (assets == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        <button onclick="@AddNewAsset">Add New Asset</button>
+    </div>
+
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Short Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var asset in assets)
+            {
+                <tr>
+                    <td>@asset.AssetId</td>
+                    <td>@asset.Name</td>
+                    <td>@asset.ShortName</td>
+                    <td>@asset.Status</td>
+                    <td>
+                        <button onclick="@(() => EditAsset(asset))">Edit</button>
+                        <button onclick="@(() => DeleteAsset(asset.AssetId))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (showEditForm)
+    {
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px; border: 1px solid #ccc;">
+                <h3>@(currentAsset.AssetId == 0 ? "Add New" : "Edit") Asset</h3>
+                <div>
+                    <label>Name:</label>
+                    <input type="text" value="@currentAsset.Name"
+                           @onchange="@((ChangeEventArgs e) => currentAsset.Name = e.Value.ToString())" />
+                </div>
+                <div>
+                    <label>Short Name:</label>
+                    <input type="text" value="@currentAsset.ShortName"
+                           @onchange="@((ChangeEventArgs e) => currentAsset.ShortName = e.Value.ToString())" />
+                </div>
+                <div>
+                    <label>Status:</label>
+                    <select value="@currentAsset.Status"
+                            @onchange="@((ChangeEventArgs e) => currentAsset.Status = e.Value.ToString())">
+                        <option value="Available">Available</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Retired">Retired</option>
+                    </select>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button onclick="@SaveAsset">Save</button>
+                    <button onclick="@CancelEdit">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<AssetModel> assets;
+    private bool showEditForm = false;
+    private AssetModel currentAsset = new AssetModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAssets();
+    }
+
+    private async Task LoadAssets()
+    {
+        assets = await Http.GetFromJsonAsync<List<AssetModel>>("api/Asset");
+    }
+
+    private void AddNewAsset()
+    {
+        currentAsset = new AssetModel();
+        showEditForm = true;
+    }
+
+    private void EditAsset(AssetModel asset)
+    {
+        currentAsset = new AssetModel
+        {
+            AssetId = asset.AssetId,
+            Name = asset.Name,
+            ShortName = asset.ShortName,
+            Status = asset.Status
+        };
+        showEditForm = true;
+    }
+
+    private async Task SaveAsset()
+    {
+        if (currentAsset.AssetId == 0)
+        {
+            await Http.PostAsJsonAsync("api/Asset", currentAsset);
+        }
+        else
+        {
+            await Http.PutAsJsonAsync($"api/Asset/{currentAsset.AssetId}", currentAsset);
+        }
+        showEditForm = false;
+        await LoadAssets();
+    }
+
+    private void CancelEdit()
+    {
+        showEditForm = false;
+    }
+
+    private async Task DeleteAsset(int id)
+    {
+        await Http.DeleteAsync($"api/Asset/{id}");
+        await LoadAssets();
+    }
+
+    public class AssetModel
+    {
+        public int AssetId { get; set; }
+        public string Name { get; set; }
+        public string ShortName { get; set; }
+        public string Status { get; set; } // Available, Assigned, Maintenance, Retired
+    }
+}
