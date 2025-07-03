@@ -1,0 +1,20 @@
+[
+  {
+    "Id": 1,
+    "Name": "Laptops",
+    "Description": "All laptop computers",
+    "Icon": "💻"
+  },
+  {
+    "Id": 2,
+    "Name": "Phones",
+    "Description": "Mobile phones and smartphones",
+    "Icon": "📱"
+  },
+  {
+    "Id": 3,
+    "Name": "Furniture",
+    "Description": "Office furniture and equipment",
+    "Icon": "🪑"
+  }
+]

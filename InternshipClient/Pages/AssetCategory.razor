@@ -1,34 +1,80 @@
 ﻿@page "/assetCategory"
 @inject HttpClient Http
+@using System.Text.Json
 
 <h3>Asset Categories</h3>
 
-@if(assetCategories == null)
+@if (assetCategories == null)
 {
-	<p><em>Loading...</em></p>
+    <p><em>Loading...</em></p>
 }
 else
 {
-	<ul>
-		@foreach(var assetCategory in assetCategories)
-		{
-			<li>@assetCategory.Name</li>
-		}
-	</ul>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Icon</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var category in assetCategories)
+            {
+                <tr>
+                    <td>@category.Id</td>
+                    <td>@category.Name</td>
+                    <td>@category.Description</td>
+                    <td>@category.Icon</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditCategory(category)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteCategory(category.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary" @onclick="AddCategory">Add New Category</button>
 }
 
-@code{
-	private List<AssetCategoryModel> assetCategories;
-	protected override async Task OnInitializedAsync()
-	{
-		assetCategories = await Http.GetFromJsonAsync<List<AssetCategoryModel>>("api/AssetCategory");
+@code {
+    private List<Category> assetCategories;
 
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            assetCategories = await Http.GetFromJsonAsync<List<Category>>("sample-data/assetCategories.json");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading categories: {ex.Message}");
+        }
+    }
 
-	public class AssetCategoryModel// line 28
-	{
-		public int Id{ get; set; }
-		public string Name{ get; set; }
+    private void AddCategory()
+    {
+        // Implement add functionality
+    }
 
-	}
+    private void EditCategory(Category category)
+    {
+        // Implement edit functionality
+    }
+
+    private void DeleteCategory(int id)
+    {
+        // Implement delete functionality
+    }
+
+    public class Category
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Icon { get; set; }
+    }
 }
