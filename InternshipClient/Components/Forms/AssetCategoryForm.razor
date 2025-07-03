@@ -1,0 +1,56 @@
+﻿@namespace InternshipClient.Components.Forms
+@using InternshipClient.Models
+
+<EditForm Model="@NewCategory" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group mb-3">
+        <label>Name</label>
+        <InputText @bind-Value="@NewCategory.Name" class="form-control" />
+        <ValidationMessage For="@(() => NewCategory.Name)" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Description</label>
+        <InputTextArea @bind-Value="@NewCategory.Description" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Icon</label>
+        <InputText @bind-Value="@NewCategory.Icon" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Add Category</button>
+        <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+    </div>
+</EditForm>
+
+@code {
+    private Category NewCategory { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<Category> OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        if (OnSave.HasDelegate)
+        {
+            await OnSave.InvokeAsync(NewCategory);
+        }
+        NewCategory = new Category();
+    }
+
+    private async Task Cancel()
+    {
+        NewCategory = new Category();
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+}

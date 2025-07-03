@@ -1,6 +1,8 @@
 ﻿@page "/assetCategory"
 @inject HttpClient Http
 @using System.Text.Json
+@using InternshipClient.Components.Forms
+@using InternshipClient.Models
 
 <h3>Asset Categories</h3>
 
@@ -8,73 +10,122 @@
 {
     <p><em>Loading...</em></p>
 }
+else if (!assetCategories.Any())
+{
+    <p><em>No categories found</em></p>
+}
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Icon</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var category in assetCategories)
-            {
+    @if (showAddForm)
+    {
+        <AssetCategoryForm OnSave="HandleAddCategory"
+                           OnCancel="CancelAddForm" />
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
                 <tr>
-                    <td>@category.Id</td>
-                    <td>@category.Name</td>
-                    <td>@category.Description</td>
-                    <td>@category.Icon</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick="() => EditCategory(category)">Edit</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteCategory(category.Id)">Delete</button>
-                    </td>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Icon</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var category in assetCategories)
+                {
+                    <tr>
+                        <td>@category.Id</td>
+                        <td>@category.Name</td>
+                        <td>@category.Description</td>
+                        <td><i class="fas fa-@category.Icon"></i></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
 
-    <button class="btn btn-primary" @onclick="AddCategory">Add New Category</button>
+        <button class="btn btn-primary" @onclick="ShowAddForm">
+            <i class="fas fa-plus"></i> Add New Category
+        </button>
+    }
 }
 
 @code {
     private List<Category> assetCategories;
+    private bool showAddForm = false;
+    private bool isLoading = true;
+    private string errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            assetCategories = await Http.GetFromJsonAsync<List<Category>>("sample-data/assetCategories.json");
+            // Debug version - shows actual request being made
+            Console.WriteLine("Attempting to load categories...");
+
+            // Get the JSON content first for debugging
+            var jsonString = await Http.GetStringAsync("sample-data/assetCategories.json");
+            Console.WriteLine($"Received JSON: {jsonString}");
+
+            // Deserialize with case-insensitive matching
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            assetCategories = JsonSerializer.Deserialize<List<Category>>(jsonString, options);
+
+            if (assetCategories == null)
+            {
+                Console.WriteLine("Warning: Deserialized null categories list");
+                assetCategories = new List<Category>();
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading categories: {ex.Message}");
+            errorMessage = $"Failed to load categories: {ex.Message}";
+            Console.WriteLine(errorMessage);
+            assetCategories = new List<Category>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
-    private void AddCategory()
+    private void ShowAddForm()
     {
-        // Implement add functionality
+        showAddForm = true;
+        StateHasChanged();
     }
 
-    private void EditCategory(Category category)
+    private async Task HandleAddCategory(Category newCategory)
     {
-        // Implement edit functionality
+        try
+        {
+            newCategory.Id = assetCategories.Any()
+                ? assetCategories.Max(c => c.Id) + 1
+                : 1;
+
+            assetCategories.Add(newCategory);
+
+            // Here you would normally save to your API
+            // await Http.PostAsJsonAsync("api/categories", newCategory);
+
+            showAddForm = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding category: {ex.Message}");
+        }
     }
 
-    private void DeleteCategory(int id)
+    private void CancelAddForm()
     {
-        // Implement delete functionality
-    }
-
-    public class Category
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Icon { get; set; }
+        showAddForm = false;
+        StateHasChanged();
     }
 }
